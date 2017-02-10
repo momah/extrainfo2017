@@ -1,0 +1,73 @@
+﻿#Obtener los platos con precio entre 4 y 5 y ordenarlos por las calorías:
+
+let $menu := doc("menu.xml")
+for $plato in $menu//plato
+let $nombre:=$plato/nombre
+where $plato/precio>=4 and $plato/precio<=5
+order by $plato/calorias 
+return $plato
+
+#Obtener las categorías de platos con las suma total de calorías:
+
+let $menu := doc("menu.xml")
+for $categ in distinct-values($menu//plato/@categoria)
+let $platos:=$menu//plato[@categoria=$categ]
+order by $categ
+return <categoria name="{$categ}" totalCal="{sum($platos/calorias)}" />
+
+
+
+#Obtener los platos bajos en calorías y altos en calorías:
+for $plato in doc("menu.xml")//plato
+return
+if($plato/calorias<300) then 
+<plato calorias="baja">{$plato/nombre}</plato>
+else <plato calorias="alta">{$plato/nombre}</plato>
+
+
+#Obtener los platos bajos en calorías
+for $plato in doc("menu.xml")//plato
+let $bajocal:= if($plato/calorias<300) then $plato/nombre else ()
+return $bajocal
+
+for $plato in doc("menu.xml")//plato/nombre
+group by $plato
+return 
+<mesa>
+<platos>{$plato}</platos>
+</mesa>
+
+
+#Obtener el precio de comandas agrupado por mesas:
+for $mesa in doc("comanda.txt")//mesa
+for $plato in doc("menu.xml")//plato
+where $plato/nombre = $mesa/platos/nombre
+return 
+<mesa>
+{$mesa/num}
+<plato>
+{$plato/nombre}
+{$plato/precio}
+</plato>
+</mesa>
+
+
+
+for $mesa in doc("comanda.txt")//mesa
+return 
+<mesa>
+<num>{$mesa/string(num)}</num>
+{for $plato in doc("menu.xml")//plato
+where $plato/nombre = $mesa/platos/nombre
+return <plato>
+{$plato/nombre} 
+{$plato/precio}
+</plato>
+}
+</mesa>
+
+
+
+
+
+
