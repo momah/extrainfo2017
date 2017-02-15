@@ -1,0 +1,116 @@
+# véase http://www.michael-noll.com/tutorials/running-hadoop-on-ubuntu-linux-multi-node-cluster/
+
+
+###################################
+NETWORK CONFIGURATION MASTER-SLAVES
+##################################
+
+-In all machines edit the /etc/hosts file and add the master and slaves IP addresses:
+
+	10.6.129.230 master
+	10.6.128.31  slave1
+	10.6.128.39  slave2
+	10.6.128.215 slave3
+	10.6.128.151 slave4
+
+
+-(optional but recommended) in all machines change the hostname in /etc/hostname  #master in the machine selected to be master, slave1 in the machine to be slave1, and so on.....
+	Then apply the changes executing 'hostnamectl set-hostname <name-machine>'   #where <name-machine> would be master, slave1, .... respectively.
+	And finally check that the changes have been applied executing 'hostname'
+
+
+-(this step is not needed in IaaS pool) Copy the public SSH key to the authorized_keys file of slaves:
+
+	ssh-copy-id -i $HOME/.ssh/id_rsa.pub bigdata@slave1
+	ssh-copy-id -i $HOME/.ssh/id_rsa.pub bigdata@slave2
+	...
+
+	(no es necesario ya que el STIC ha clonado todas las máquinas a partir del máster)
+
+
+###################################
+HADOOP CONFIGURATION 
+##################################
+
+
+-ONLY in master create the $HADOOP_HOME/etc/hadoop/masters file:
+
+	master
+
+
+-ONLY in master update the $HADOOP_HOME/etc/hadoop/slaves file:
+
+        master
+	slave1
+	slave2
+	slave3
+	...
+
+
+-IN ALL MACHINES change 'localhost' by 'master' in the files $HADOOP_HOME/etc/hadoop/core-site.xml and $HADOOP_HOME/etc/hadoop/mapred-site.xml:
+Modify in master and distribute the files to the slaves in the following way:
+
+scp $HADOOP_HOME/etc/hadoop/core-site.xml bigdata@slave1:$HADOOP_HOME/etc/hadoop
+scp $HADOOP_HOME/etc/hadoop/core-site.xml bigdata@slave2:$HADOOP_HOME/etc/hadoop
+scp $HADOOP_HOME/etc/hadoop/core-site.xml bigdata@slave3:$HADOOP_HOME/etc/hadoop
+scp $HADOOP_HOME/etc/hadoop/core-site.xml bigdata@slave4:$HADOOP_HOME/etc/hadoop
+
+scp $HADOOP_HOME/etc/hadoop/mapred-site.xml bigdata@slave1:$HADOOP_HOME/etc/hadoop
+scp $HADOOP_HOME/etc/hadoop/mapred-site.xml bigdata@slave2:$HADOOP_HOME/etc/hadoop
+scp $HADOOP_HOME/etc/hadoop/mapred-site.xml bigdata@slave3:$HADOOP_HOME/etc/hadoop
+scp $HADOOP_HOME/etc/hadoop/mapred-site.xml bigdata@slave4:$HADOOP_HOME/etc/hadoop
+
+
+-IN ALL MACHINES add the following property in the file $HADOOP_HOME/etc/hadoop/yarn-site.xml.
+Modify in master:
+
+     <property>
+        <name>yarn.resourcemanager.hostname</name>
+        <value>master</value>
+        <description>Resource Manager hostname.</description>
+     </property>
+
+
+and distribute the files to the slaves in the following way:
+
+scp $HADOOP_HOME/etc/hadoop/yarn-site.xml bigdata@slave1:$HADOOP_HOME/etc/hadoop
+scp $HADOOP_HOME/etc/hadoop/yarn-site.xml bigdata@slave2:$HADOOP_HOME/etc/hadoop
+scp $HADOOP_HOME/etc/hadoop/yarn-site.xml bigdata@slave3:$HADOOP_HOME/etc/hadoop
+scp $HADOOP_HOME/etc/hadoop/yarn-site.xml bigdata@slave4:$HADOOP_HOME/etc/hadoop
+
+
+-Format the HDFS:
+
+rm -rf /usr/local/hadoop_hdfs/namenode/*
+ssh -t bigdata@slave1 "rm -rf /usr/local/hadoop_hdfs/namenode/*"
+ssh -t bigdata@slave2 "rm -rf /usr/local/hadoop_hdfs/namenode/*"
+ssh -t bigdata@slave3 "rm -rf /usr/local/hadoop_hdfs/namenode/*"
+ssh -t bigdata@slave4 "rm -rf /usr/local/hadoop_hdfs/namenode/*"
+
+rm -rf /usr/local/hadoop_hdfs/datanode/*
+ssh -t bigdata@slave1 "rm -rf /usr/local/hadoop_hdfs/datanode/*"
+ssh -t bigdata@slave2 "rm -rf /usr/local/hadoop_hdfs/datanode/*"
+ssh -t bigdata@slave3 "rm -rf /usr/local/hadoop_hdfs/datanode/*"
+ssh -t bigdata@slave4 "rm -rf /usr/local/hadoop_hdfs/datanode/*"
+
+hdfs namenode -format
+
+
+-Start the HDFS daemons and create /tmp and user folders:
+
+hadoop fs -mkdir /tmp
+hadoop fs -chmod -R  1777 /tmp
+hadoop fs -mkdir -p /user/bigdata
+hadoop fs -chown -R bigdata:bigdata /user/bigdata
+
+
+-Test cluster:
+
+cd ~/extrainfo2017/data
+hadoop fs -mkdir -p input1
+hadoop fs -copyFromLocal texto_big_data.txt input1
+hadoop jar $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.0.jar wordcount input1 output1
+hadoop fs -cat output1/*
+
+
+
