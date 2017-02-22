@@ -78,6 +78,12 @@ scp $HADOOP_HOME/etc/hadoop/yarn-site.xml bigdata@slave2:$HADOOP_HOME/etc/hadoop
 scp $HADOOP_HOME/etc/hadoop/yarn-site.xml bigdata@slave3:$HADOOP_HOME/etc/hadoop
 scp $HADOOP_HOME/etc/hadoop/yarn-site.xml bigdata@slave4:$HADOOP_HOME/etc/hadoop
 
+Important note: If you cannot visit http://<ip>:8088, then you delete the last property from yarn-site.xml 
+ONLY in master node.
+
+
+
+
 
 -Format the HDFS:
 
