@@ -98,6 +98,9 @@ hdfs namenode -format
 
 -Start the HDFS daemons and create /tmp and user folders:
 
+start-dfs.sh
+start-yarn.sh
+
 hadoop fs -mkdir /tmp
 hadoop fs -chmod -R  1777 /tmp
 hadoop fs -mkdir -p /user/bigdata
