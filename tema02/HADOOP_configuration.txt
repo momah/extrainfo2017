@@ -7,6 +7,8 @@ NETWORK CONFIGURATION MASTER-SLAVES
 
 -In all machines edit the /etc/hosts file and add the master and slaves IP addresses:
 
+        #127.0.1.1   localhost   #IMPORTANT NOTE: Only in master, comment out this line  to avoid 
+                                 # java.net.ConnectException: Conexión rehusada calling from master/127.0.0.1 to master:9000
 	10.6.129.230 master
 	10.6.128.31  slave1
 	10.6.128.39  slave2
@@ -14,7 +16,7 @@ NETWORK CONFIGURATION MASTER-SLAVES
 	10.6.128.151 slave4
 
 
--(optional but recommended) in all machines change the hostname in /etc/hostname  #master in the machine selected to be master, slave1 in the machine to be slave1, and so on.....
+-(optional but recommended) in all machines change the hostname in /etc/hostname     #i.e, master in the machine selected to be master, slave1 in the machine to be slave1, and so on.....
 	Then apply the changes executing 'hostnamectl set-hostname <name-machine>'   #where <name-machine> would be master, slave1, .... respectively.
 	And finally check that the changes have been applied executing 'hostname'
 
@@ -28,12 +30,40 @@ NETWORK CONFIGURATION MASTER-SLAVES
 	(no es necesario ya que el STIC ha clonado todas las máquinas a partir del máster)
 
 
+
+- Apache Hadoop is not currently supported on IPv6 networks. 
+We disable it in /etc/sysctl.conf by adding the following lines.
+Modify in master:
+
+net.ipv6.conf.all.disable_ipv6 = 1
+net.ipv6.conf.default.disable_ipv6 = 1
+net.ipv6.conf.lo.disable_ipv6 = 1
+
+and distribute the files to the slaves in the following way:
+
+scp /etc/sysctl.conf bigdata@slave1:/etc
+ssh -t slave1 "echo bigdata | sudo -S sysctl -p"
+
+scp /etc/sysctl.conf bigdata@slave2:/etc
+ssh -t slave2 "echo bigdata | sudo -S sysctl -p"
+
+scp /etc/sysctl.conf bigdata@slave2:/etc
+ssh -t slave2 "echo bigdata | sudo -S sysctl -p"
+
+scp /etc/sysctl.conf bigdata@slave3:/etc
+ssh -t slave3 "echo bigdata | sudo -S sysctl -p"
+
+scp /etc/sysctl.conf bigdata@slave4:/etc
+ssh -t slave4 "echo bigdata | sudo -S sysctl -p"
+
+
+
 ###################################
 HADOOP CONFIGURATION 
 ##################################
 
 
--ONLY in master create the $HADOOP_HOME/etc/hadoop/masters file:
+-ONLY in master create the $HADOOP_HOME/etc/hadoop/master file:
 
 	master
 
@@ -78,10 +108,9 @@ scp $HADOOP_HOME/etc/hadoop/yarn-site.xml bigdata@slave2:$HADOOP_HOME/etc/hadoop
 scp $HADOOP_HOME/etc/hadoop/yarn-site.xml bigdata@slave3:$HADOOP_HOME/etc/hadoop
 scp $HADOOP_HOME/etc/hadoop/yarn-site.xml bigdata@slave4:$HADOOP_HOME/etc/hadoop
 
-Important note: If you cannot visit http://<ip>:8088, then you delete the last property from yarn-site.xml 
+
+IMPORTANT NOTE: If you cannot visit http://<ip>:8088, then you delete the last property from yarn-site.xml 
 ONLY in master node.
-
-
 
 
 
@@ -101,11 +130,27 @@ ssh -t bigdata@slave4 "rm -rf /usr/local/hadoop_hdfs/datanode/*"
 
 hdfs namenode -format
 
+-Optionally, you can clean the logs folder:
+
+rm -rf /usr/local/hadoop/logs/*.*
+ssh -t bigdata@slave1 "rm -rf /usr/local/hadoop/logs/*.*"
+ssh -t bigdata@slave2 "rm -rf /usr/local/hadoop/logs/*.*"
+ssh -t bigdata@slave3 "rm -rf /usr/local/hadoop/logs/*.*"
+ssh -t bigdata@slave4 "rm -rf /usr/local/hadoop/logs/*.*"
+
+rm -rf /usr/local/hadoop/logs/userlogs/*
+ssh -t bigdata@slave1 "rm -rf /usr/local/hadoop/logs/userlogs/*"
+ssh -t bigdata@slave2 "rm -rf /usr/local/hadoop/logs/userlogs/*"
+ssh -t bigdata@slave3 "rm -rf /usr/local/hadoop/logs/userlogs/*"
+ssh -t bigdata@slave4 "rm -rf /usr/local/hadoop/logs/userlogs/*"
+
+
 
 -Start the HDFS daemons and create /tmp and user folders:
 
 start-dfs.sh
 start-yarn.sh
+hdfs dfsadmin -report    #or check http://localhost:50070
 
 hadoop fs -mkdir /tmp
 hadoop fs -chmod -R  1777 /tmp
@@ -117,9 +162,56 @@ hadoop fs -chown -R bigdata:bigdata /user/bigdata
 
 cd ~/extrainfo2017/data
 hadoop fs -mkdir -p input1
-hadoop fs -copyFromLocal texto_big_data.txt input1
+hadoop fs -copyFromLocal texto_big_data.txt input1/
+
+hadoop fs -mkdir -p input1
+hadoop fs -copyFromLocal ~/downloads/words.txt input1/
 hadoop jar $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.0.jar wordcount input1 output1
 hadoop fs -cat output1/*
 
+#Free memory in VMs if were necessary
+#sudo sync && echo 3 | sudo tee /proc/sys/vm/drop_caches
+
+
+
+
+
+
+
+
+
+NOTES WHEN COMMISIONING NEW DATANODES:
+
+-The following steps are necessary for commisioning new datanodes:
+
+-ONLY in master add the following property in the file $HADOOP_HOME/etc/hadoop/yarn-site.xml
+
+<property>    
+   <name>yarn.resourcemanager.nodes.include-path</name>
+   <value>/usr/local/hadoop/etc/hadoop/includes</value>
+</property>
+
+-ONLY in master add the following property in the file $HADOOP_HOME/etc/hadoop/hdfs-site.xml
+
+<property>
+   <name>dfs.hosts</name>
+   <value>/usr/local/hadoop/etc/hadoop/includes</value>
+</property>
+
+-ONLY in master create the $HADOOP_HOME/etc/hadoop/includes file, including the new datanode IPs:
+
+10.6.128.31
+10.6.128.39
+10.6.128.215
+10.6.128.151
+
+-Start the daemons and refreshnodes:
+
+start-dfs.sh
+star-yarn.sh
+yarn rmadmin -refreshNodes
+hdfs dfsadmin -refreshNodes
+hdfs dfsadmin -report    #or check http://localhost:50070
+hdfs balancer
 
 
