@@ -1,4 +1,7 @@
+#execute as:
 #python wordcount.py books.json | sort
+#
+
 import MapReduce
 import sys
 

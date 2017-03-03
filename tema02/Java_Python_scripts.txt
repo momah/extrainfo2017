@@ -1,28 +1,17 @@
-
-
-
-Sequential wordcount (python):
-
-/************/
-echo "hay muchas, pero que muchas cosas que aprender en esto del big data" | python mapper.py
-echo "hay muchas, pero que muchas cosas que aprender en esto del big data" | python mapper.py | sort -k1,1 | python reducer.py
-
-python wordcount.py books.json | sort
-/************/
-
-
-
-
-Hadoop wordcount (java):
+1) Hadoop wordcount (java):
 
 
 /************/
 cd hadoop_wordcount
 
-javac -classpath $HADOOP_HOME/share/hadoop/common/lib/hadoop-annotations-2.6.7.jar:\
-$HADOOP_HOME/share/hadoop/common/hadoop-common-2.6.0.jar:\
-$HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-client-core-2.6.0.jar:\
+#asegurarse de compilar con java 7
+sudo update-alternatives --config javac
+
+javac -classpath $HADOOP_HOME/share/hadoop/common/lib/hadoop-annotations-2.7.0.jar:\
+$HADOOP_HOME/share/hadoop/common/hadoop-common-2.7.0.jar:\
+$HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-client-core-2.7.0.jar:\
 $HADOOP_HOME/share/hadoop/common/lib/commons-cli-1.2.jar -d bin src/mapred/WordCount.java
+
 
 cd bin
 jar cf mapred.jar mapred/*.class
@@ -35,9 +24,27 @@ hadoop fs -cat output2/*
 hadoop fs -rm -r output2
 /**************/
 
-Hadoop wordcount (python):
+
+
+
+
+2) Sequential wordcount (python):
 
 /************/
+cd python_wordcount
+
+echo "hay muchas, pero que muchas cosas que aprender en esto del big data" | python mapper.py
+echo "hay muchas, pero que muchas cosas que aprender en esto del big data" | python mapper.py | sort -k1,1 | python reducer.py
+
+python wordcount.py books.json | sort
+/************/
+
+
+
+3) Hadoop wordcount (python):
+
+/************/
+cd python_wordcount
 hadoop fs -rm -r output2
 
 hadoop jar $HADOOP_HOME/share/hadoop/tools/lib/hadoop-streaming-2.6.0.jar \
@@ -52,10 +59,11 @@ hadoop fs -cat output2/*
 
 
 
-Parsing web-logs (python):
+4) Parsing web-logs (python):
 
-
-/*IPs por lugar de acceso ***********/
+/************/
+cd python_logs\parse_logs
+####IPs por lugar de acceso 
 cat access.log | python map_original.py  > output.log
 cat access.log | python map_original.py  | python reduce_original.py > output.log
 
@@ -77,7 +85,8 @@ hadoop fs -getmerge output2/ output.txt
 
 
 
-/*IPs por lugar de acceso y tipo de conexión ***********/
+cd python_logs\parse_logs_lugar_acceso
+####IPs por lugar de acceso y tipo de conexión 
 cat access.log | python map_streaming_final.py  > output.log
 cat access.log | python map_streaming_final.py  | python reduce_streaming_final.py > output.log
 

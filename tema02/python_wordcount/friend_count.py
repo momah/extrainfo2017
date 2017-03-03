@@ -1,4 +1,7 @@
+#execute as:
 #python friend_count.py friends.json
+#
+
 import MapReduce
 import sys
 

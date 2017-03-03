@@ -1,4 +1,7 @@
+#execute as:
 #python asymmetric_friendships.py friends.json
+#
+
 import MapReduce
 import sys
 
