@@ -12,17 +12,19 @@ export PATH=$PATH:$PIG_HOME/bin
 ' >> ~/.profile
 
 
-
 hadoop fs -mkdir pig
-hadoop fs -copyFromLocal movies.csv pig/movies.csv
+hadoop fs -copyFromLocal extrainfo2017/data/movies.csv pig/movies.csv
+
+
 
 # PIG
-
 # películas con un rating mayor que 4.  
 
 movies = load 'pig/movies.csv'  using PigStorage(',') as (id, title, year,rating, duration);
 movsup4 = filter movies by rating>=4;
 store movsup4 into 'movsup4';
+
+
 
 # group by 
 
