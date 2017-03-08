@@ -1,0 +1,59 @@
+hadoop fs -mkdir pig
+hadoop fs -copyFromLocal movies.csv pig/movies.csv
+
+# PIG
+
+# películas con un rating mayor que 4.  
+
+movies = load 'pig/movies.csv'  using PigStorage(',') as (id, title, year,rating, duration);
+movsup4 = filter movies by rating>=4;
+store movsup4 into 'movsup4';
+
+# group by 
+
+movies = LOAD 'pig/movies.csv'  using PigStorage(',') as (id, title, year,rating, duration);
+movgrp =  GROUP movies by year;
+movcnt = FOREACH movgrp GENERATE group, COUNT(movies) as cuenta; 
+STORE movcnt INTO 'movgrp';
+
+
+# filter
+
+movies = LOAD 'pig/movies.csv'  using PigStorage(',') as (id, title, year,rating, duration);
+movgrp =  GROUP movies by year;
+movcnt = FOREACH movgrp GENERATE group, COUNT(movies) as cuenta; 
+movfilt = FILTER movcnt BY cuenta > 2;
+STORE movfilt INTO 'filter_mov';
+
+
+# sort
+
+movies = LOAD 'pig/movies.csv'  using PigStorage(',') as (id, title, year,rating, duration);
+movgrp =  GROUP movies by year;
+movcnt = FOREACH movgrp GENERATE group, COUNT(movies) as cuenta; 
+movfilt = FILTER movcnt BY cuenta > 2;
+movsrt = ORDER movfilt BY cuenta DESC;
+STORE movsrt INTO 'sort_mov';
+
+# join
+
+movies = LOAD 'pig/movies.csv'  using PigStorage(',') as (id, title, year,rating, duration);
+movgrp =  GROUP movies by year;
+movstat = FOREACH movgrp GENERATE 
+        group as year,
+        MAX(movies.rating) as max_rating,
+        MIN(movies.rating) as min_rating,
+        COUNT(movies) AS cnt_movies;
+movmax = JOIN movies BY (year,rating), movstat BY (year,max_rating);
+movmax = FOREACH movmax GENERATE movies::id as id, movies::title as title, movies::year as year, movies::rating as rating, movies::duration as duration;
+
+movmin = JOIN movies BY (year,rating), movstat BY (year,min_rating);
+movmin = FOREACH movmin GENERATE movies::id as id, movies::title as title, movies::year as year, movies::rating as rating, movies::duration as duration;
+
+movmaxmin = JOIN movmax BY year, movmin BY year;
+movmaxmin= FOREACH movmaxmin GENERATE movmin::year as min_year, movmin::id as min_id, movmin::title as min_title, movmin::rating as min_rating, movmax::id as max_id, movmax::title as max_title, movmax::rating as max_rating;
+
+movmaxminsort = ORDER movmaxmin BY min_year;
+movmaxminfilt = FILTER movmaxminsort BY min_year >= 2000;
+
+STORE movmaxminfilt INTO 'maxmin_mov' using PigStorage(',');
