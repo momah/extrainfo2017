@@ -1,3 +1,18 @@
+# instalación de PIG
+cd ~/downloads
+wget http://apache.rediris.es/pig/pig-0.16.0/pig-0.16.0.tar.gz
+tar -xvf pig-0.16.0.tar.gz
+sudo mv pig-0.16.0 /usr/local/pig/
+sudo chown -R bigdata:bigdata /usr/local/pig/
+
+echo '
+export PIG_HOME=/usr/local/pig
+export PATH=$PATH:$PIG_HOME/bin 
+
+' >> ~/.profile
+
+
+
 hadoop fs -mkdir pig
 hadoop fs -copyFromLocal movies.csv pig/movies.csv
 
