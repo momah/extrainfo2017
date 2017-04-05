@@ -16,16 +16,20 @@ mr = MapReduce.MapReduce()
 
 def mapper(record):
     # emit every combo of friends
-    -- Complete the code of mapper --
-    -- Hint: mr.emit_intermediate(<key1>, <value>) and mr.emit_intermediate(<key2>, <value>) for each pair of friends
+#    -- Complete the code of mapper --
+#    -- Hint: mr.emit_intermediate(<key1>, <value>) and mr.emit_intermediate(<key2>, <value>) for each pair of friends
+    key = tuple((record[0], record[1]))
+    mr.emit_intermediate(key, 1)
 
 
 
 def reducer(key, list_of_values):
     friends = []
     for value in list_of_values:
-        -- Complete the code of reducer --
-        -- Hint: Avoid repetition of friends
+        #-- Complete the code of reducer --
+        #-- Hint: Avoid repetition of friends
+        if value not in friends:
+           friends.append(value)
 
     for friend in friends:
         mr.emit((key, friend))
@@ -36,4 +40,3 @@ def reducer(key, list_of_values):
 if __name__ == '__main__':
   inputdata = open(sys.argv[1])
   mr.execute(inputdata, mapper, reducer)
-

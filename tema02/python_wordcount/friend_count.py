@@ -17,23 +17,21 @@ mr = MapReduce.MapReduce()
 def mapper(record):
     # key: document identifier
     # value: document contents
-    
-    -- Complete the code of mapper --
-    -- Hint: mr.emit_intermediate(<key>, <value>)
-
+    #-- Complete the code of mapper --
+    #-- Hint: mr.emit_intermediate(<key>, <value>)
+    key = record[0]
+    value = record[1]
+    mr.emit_intermediate(key, value)
 
 def reducer(key, list_of_values):
     # key: word
     # value: list of occurrence counts
-    
-    -- Complete the code of reducer --
-    -- Hint: mr.emit((<key>, <operation with list_of_values>))
-
+    #-- Complete the code of reducer --
+    #-- Hint: mr.emit((<key>, <operation with list_of_values>))
+    mr.emit((key, len(list_of_values)))
 
 # Do not modify below this line
 # =============================
 if __name__ == '__main__':
   inputdata = open(sys.argv[1])
   mr.execute(inputdata, mapper, reducer)
-
-
